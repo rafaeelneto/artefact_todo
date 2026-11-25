@@ -1,36 +1,69 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Tarefas
 
-## Getting Started
+Gerenciador de tarefas simples feito com Next.js 15 e tRPC. As tarefas ficam em memória no servidor: não há banco de dados, então os dados voltam ao estado inicial sempre que o servidor reinicia.
 
-First, run the development server:
+## Funcionalidades
+
+- Listagem renderizada no servidor (SSR), com scroll infinito
+- Criação e edição de tarefas com validação no formulário e no servidor
+- Exclusão direto da listagem, com confirmação e mensagem de sucesso ou erro
+- Estados de carregamento, lista vazia e erro com opção de tentar novamente
+
+## Stack
+
+- [Next.js 15](https://nextjs.org) (App Router) e React 19
+- [tRPC 11](https://trpc.io) com [TanStack Query 5](https://tanstack.com/query)
+- [zod](https://zod.dev) para validação e [react-hook-form](https://react-hook-form.com) no formulário
+- [Tailwind CSS 4](https://tailwindcss.com), [shadcn/ui](https://ui.shadcn.com) e [sonner](https://sonner.emilkowal.ski)
+- [Vitest](https://vitest.dev) para os testes
+
+## Como rodar
+
+Requer Node.js 22.12 ou superior.
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Acesse [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Outros comandos:
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+npm test          # testes do repositório e do router tRPC
+npm run check     # typecheck, lint e formatação
+npm run build     # build de produção
+npm start         # servidor de produção (após o build)
+```
 
-## Learn More
+## Como funciona
 
-To learn more about Next.js, take a look at the following resources:
+```
+server/tasks/        schema zod, repositório em memória e dados iniciais
+server/routers/      procedures tRPC (list, byId, create, update, delete)
+app/api/trpc/        rota que expõe o router via HTTP
+trpc/                integração do tRPC com o TanStack Query (servidor e cliente)
+app/                 páginas: listagem, nova tarefa e edição
+components/tasks/    componentes da listagem e do formulário
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Fluxo de dados da listagem:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```
+servidor                                       navegador
+page.tsx ─ busca a 1ª página chamando o
+           router direto (sem HTTP)
+         └ envia o cache junto com o HTML ───► TanStack Query recebe o cache (hydrate)
+                                               a lista aparece sem nova requisição
+                                               scroll   → próximas páginas via /api/trpc
+                                               excluir  → invalida a lista e busca de novo
+```
 
-## Deploy on Vercel
+## Decisões
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- **tRPC + TanStack Query:** o tRPC garante a tipagem entre client e server e o TanStack Query lida com o cache, estados de carregamento e atualização da lista depois de criar, editar ou excluir.
+- **Paginação por cursor (`dataCriacao` + `id`):** cada página começa depois da posição da última tarefa carregada, então excluir uma tarefa durante o scroll não pula nem repete itens.
+- **Um único schema zod:** as mesmas regras validam o formulário e as procedures do servidor; erros de campo vindos do servidor aparecem embaixo do campo correspondente.
+- **Armazenamento em um `Map` no `globalThis`:** acesso por id simples e rápido, e os dados sobrevivem ao hot reload em desenvolvimento.
+- **Next.js fixado na versão 15:** atende ao requisito do desafio, mesmo havendo versões mais novas.
