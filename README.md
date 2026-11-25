@@ -2,6 +2,10 @@
 
 Gerenciador de tarefas simples feito com Next.js 15 e tRPC. As tarefas ficam em memória no servidor: não há banco de dados, então os dados voltam ao estado inicial sempre que o servidor reinicia.
 
+**Demo:** [artefact-todo.onrender.com](https://artefact-todo.onrender.com/)
+
+> Hospedado no plano gratuito do Render: depois de 15 minutos sem acesso o servidor hiberna, então o primeiro carregamento pode levar cerca de um minuto e as tarefas voltam ao estado inicial.
+
 ## Funcionalidades
 
 - Listagem renderizada no servidor (SSR), com scroll infinito
