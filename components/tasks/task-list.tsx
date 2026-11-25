@@ -11,7 +11,7 @@ import { useTRPC } from "@/trpc/client";
 
 export function TaskList() {
   const trpc = useTRPC();
-  const { data, hasNextPage, isFetchingNextPage, isFetchNextPageError, fetchNextPage } =
+  const { data, hasNextPage, isFetching, isFetchingNextPage, isFetchNextPageError, fetchNextPage } =
     useSuspenseInfiniteQuery(
       trpc.task.list.infiniteQueryOptions(
         { limit: 10 },
@@ -22,17 +22,17 @@ export function TaskList() {
 
   useEffect(() => {
     const sentinel = sentinelRef.current;
-    if (!sentinel || !hasNextPage || isFetchNextPageError) return;
+    if (!sentinel || !hasNextPage || isFetching || isFetchNextPageError) return;
 
     const observer = new IntersectionObserver(
       ([entry]) => {
-        if (entry?.isIntersecting && !isFetchingNextPage) void fetchNextPage();
+        if (entry?.isIntersecting) void fetchNextPage();
       },
       { rootMargin: "200px" },
     );
     observer.observe(sentinel);
     return () => observer.disconnect();
-  }, [hasNextPage, isFetchingNextPage, isFetchNextPageError, fetchNextPage]);
+  }, [hasNextPage, isFetching, isFetchNextPageError, fetchNextPage]);
 
   const tasks = data.pages.flatMap((page) => page.items);
 

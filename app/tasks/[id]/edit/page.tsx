@@ -2,11 +2,11 @@ import { TRPCError } from "@trpc/server";
 import { notFound } from "next/navigation";
 
 import { TaskForm } from "@/components/tasks/task-form";
-import { getQueryClient, trpc } from "@/trpc/server";
+import { caller } from "@/trpc/server";
 
 async function loadTask(id: string) {
   try {
-    return await getQueryClient().query(trpc.task.byId.queryOptions({ id }));
+    return await caller.task.byId({ id });
   } catch (error) {
     if (error instanceof TRPCError && error.code === "NOT_FOUND") notFound();
     throw error;

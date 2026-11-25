@@ -36,14 +36,15 @@ export function TaskForm({ task }: { task?: Task }) {
     },
     onError: (error: TRPCClientErrorLike<AppRouter>) => {
       const fieldErrors = error.data?.zodError?.fieldErrors;
-      if (!fieldErrors) {
-        toast.error(error.message);
-        return;
-      }
+      let shown = false;
       for (const field of ["titulo", "descricao"] as const) {
-        const message = fieldErrors[field]?.[0];
-        if (message) form.setError(field, { message });
+        const message = fieldErrors?.[field]?.[0];
+        if (message) {
+          form.setError(field, { message });
+          shown = true;
+        }
       }
+      if (!shown) toast.error(error.message);
     },
   };
   const create = useMutation(trpc.task.create.mutationOptions(handlers));
