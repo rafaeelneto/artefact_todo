@@ -11,17 +11,18 @@ import { useTRPC } from "@/trpc/client";
 
 export function TaskList() {
   const trpc = useTRPC();
-  const { data, hasNextPage, isFetchingNextPage, fetchNextPage } = useSuspenseInfiniteQuery(
-    trpc.task.list.infiniteQueryOptions(
-      { limit: 10 },
-      { getNextPageParam: (lastPage) => lastPage.nextCursor },
-    ),
-  );
+  const { data, hasNextPage, isFetchingNextPage, isFetchNextPageError, fetchNextPage } =
+    useSuspenseInfiniteQuery(
+      trpc.task.list.infiniteQueryOptions(
+        { limit: 10 },
+        { getNextPageParam: (lastPage) => lastPage.nextCursor },
+      ),
+    );
   const sentinelRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const sentinel = sentinelRef.current;
-    if (!sentinel || !hasNextPage) return;
+    if (!sentinel || !hasNextPage || isFetchNextPageError) return;
 
     const observer = new IntersectionObserver(
       ([entry]) => {
@@ -31,7 +32,7 @@ export function TaskList() {
     );
     observer.observe(sentinel);
     return () => observer.disconnect();
-  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
+  }, [hasNextPage, isFetchingNextPage, isFetchNextPageError, fetchNextPage]);
 
   const tasks = data.pages.flatMap((page) => page.items);
 
@@ -60,6 +61,13 @@ export function TaskList() {
           <span className="flex items-center gap-2">
             <Loader2Icon className="size-4 animate-spin" />
             Carregando mais…
+          </span>
+        ) : isFetchNextPageError ? (
+          <span className="flex items-center gap-2">
+            Não foi possível carregar mais tarefas.
+            <Button variant="link" size="sm" onClick={() => void fetchNextPage()}>
+              Tentar novamente
+            </Button>
           </span>
         ) : (
           !hasNextPage && "Não há mais tarefas"
